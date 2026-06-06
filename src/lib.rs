@@ -1,23 +1,29 @@
 use std::{error::Error, fs};
 
-pub struct Config {
-    pub query: String,
-    pub filename: String,
-}
-impl Config {
-    pub fn new(args: &[String]) -> Result<Self, &'static str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
-        let query = args[1].clone();
-        let filename = args[2].clone();
-        Ok(Config { query, filename })
-    }
-}
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.filename)?;
+use clap::Parser;
 
-    let results = search(&config.query, &contents);
+/// minigrep by lorlike
+#[derive(Debug, Parser)]
+#[command(name = "minigrep", version)]
+pub struct Args {
+    /// the string for query
+    query: String,
+    /// the filename to query
+    filename: String,
+    /// match insensitively
+    #[arg(long, short)]
+    case_insensitive: bool,
+}
+
+pub fn run() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
+    let contents = fs::read_to_string(args.filename)?;
+
+    let results = if args.case_insensitive {
+        search_case_insensitive(&args.query, &contents)
+    } else {
+        search(&args.query, &contents)
+    };
     for line in results {
         println!("{line}");
     }
@@ -28,6 +34,17 @@ fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     let mut results = Vec::new();
     for line in contents.lines() {
         if line.contains(query) {
+            results.push(line);
+        }
+    }
+    results
+}
+
+fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&query) {
             results.push(line);
         }
     }
