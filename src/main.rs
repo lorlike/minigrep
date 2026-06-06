@@ -4,6 +4,10 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let config = Config::new(&args);
+    run(config);
+}
+
+fn run(config: Config) {
     let contents = fs::read_to_string(config.filename).unwrap();
 
     for line in contents.lines() {
